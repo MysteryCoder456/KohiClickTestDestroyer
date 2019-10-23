@@ -1,16 +1,56 @@
-import pyautogui
-from time import sleep
-from random import randint
+import time
+import threading
+from pynput.mouse import Button, Controller
+from pynput.keyboard import Listener, KeyCode
 
-screen_size = pyautogui.size()
-click_x, click_y = (screen_size[0] / 2, screen_size[1] * 0.6)
-timer = 0
 
-print("Charging up auto clicker!!! (this may take about 3-5 seconds)")
-sleep(randint(3, 5))
+delay = 0.0008
+button = Button.left
+start_stop_key = KeyCode(char='s')
+exit_key = KeyCode(char='e')
 
-print("Autoclicker activated!!! Now watch the destruction...")
 
-pyautogui.moveTo(click_x, click_y)
-while timer < 100:
-	pyautogui.click()
+class ClickMouse(threading.Thread):
+    def __init__(self, delay, button):
+        super(ClickMouse, self).__init__()
+        self.delay = delay
+        self.button = button
+        self.running = False
+        self.program_running = True
+
+    def start_clicking(self):
+        self.running = True
+
+    def stop_clicking(self):
+        self.running = False
+
+    def exit(self):
+        self.stop_clicking()
+        self.program_running = False
+
+    def run(self):
+        while self.program_running:
+            while self.running:
+                mouse.click(self.button)
+                time.sleep(self.delay)
+            time.sleep(0.1)
+
+
+mouse = Controller()
+click_thread = ClickMouse(delay, button)
+click_thread.start()
+
+
+def on_press(key):
+    if key == start_stop_key:
+        if click_thread.running:
+            click_thread.stop_clicking()
+        else:
+            click_thread.start_clicking()
+    elif key == exit_key:
+        click_thread.exit()
+        listener.stop()
+
+
+with Listener(on_press=on_press) as listener:
+    listener.join()
